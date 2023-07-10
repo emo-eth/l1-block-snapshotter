@@ -14,7 +14,7 @@ import {
     L1_FEE_SCALAR_SELECTOR
 } from "./lib/Constants.sol";
 
-contract L1Snapshot {
+contract L1BlockSnapshotter {
     ///@dev The L1 block contract to use for snapshots for all OP Stack chains.
     IL1Block public constant L1_BLOCK = IL1Block(0x4200000000000000000000000000000000000015);
 
@@ -117,7 +117,7 @@ contract L1Snapshot {
      */
     function _callL1Block(uint256 selectorConst) internal view returns (uint256 val) {
         address l1BlockAddress = address(L1_BLOCK);
-        assembly {
+        assembly ("memory-safe") {
             mstore(0, selectorConst)
             if iszero(
                 staticcall(

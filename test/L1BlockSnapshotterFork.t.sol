@@ -2,14 +2,14 @@
 pragma solidity ^0.8.17;
 
 import {Test} from "forge-std/Test.sol";
-import {L1Snapshot, L1BlockSnapshot, IL1Block} from "../src/L1Snapshot.sol";
+import {L1BlockSnapshotter, L1BlockSnapshot, IL1Block} from "../src/L1BlockSnapshotter.sol";
 
-contract L1SnapshotForkTest is Test {
-    L1Snapshot snapshot;
+contract L1BlockSnapshotterForkTest is Test {
+    L1BlockSnapshotter snapshot;
     IL1Block l1Block;
 
     function setUp() public {
-        snapshot = new L1Snapshot();
+        snapshot = new L1BlockSnapshotter();
         l1Block = snapshot.L1_BLOCK();
     }
 
@@ -26,7 +26,7 @@ contract L1SnapshotForkTest is Test {
     }
 
     function _runFork() internal {
-        snapshot = new L1Snapshot();
+        snapshot = new L1BlockSnapshotter();
         snapshot.snapshot();
         L1BlockSnapshot memory l1BlockSnapshot = snapshot.getL1BlockSnapshot(l1Block.number());
         assertEq(l1BlockSnapshot.number, l1Block.number());

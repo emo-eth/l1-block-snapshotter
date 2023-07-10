@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {Test} from "forge-std/Test.sol";
-import {L1Snapshot, L1BlockSnapshot, IL1Block} from "../src/L1Snapshot.sol";
+import {L1BlockSnapshotter, L1BlockSnapshot, IL1Block} from "../src/L1BlockSnapshotter.sol";
 
 contract L1BlockMock is IL1Block {
     L1BlockSnapshot snapshot;
@@ -64,12 +64,12 @@ contract L1BlockMock is IL1Block {
     }
 }
 
-contract L1SnapshotTest is Test {
-    L1Snapshot test;
+contract L1BlockSnapshotterTest is Test {
+    L1BlockSnapshotter test;
     IL1Block mock;
 
     function setUp() public {
-        test = new L1Snapshot();
+        test = new L1BlockSnapshotter();
         mock = new L1BlockMock();
         vm.etch(address(test.L1_BLOCK()), address(mock).code);
         mock = test.L1_BLOCK();
@@ -148,7 +148,7 @@ contract L1SnapshotTest is Test {
     }
 
     function testSnapshot_NoSnapshotForBlock() public {
-        vm.expectRevert(abi.encodeWithSelector(L1Snapshot.NoSnapshotForBlock.selector, uint256(2)));
+        vm.expectRevert(abi.encodeWithSelector(L1BlockSnapshotter.NoSnapshotForBlock.selector, uint256(2)));
         test.getL1BlockSnapshot(2);
         mock.setL1BlockValues(2, 3, 4, bytes32(uint256(5)), 6, bytes32(uint256(7)), 8, 9);
     }

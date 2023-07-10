@@ -3,5 +3,13 @@ src = "src"
 out = "out"
 libs = ["lib"]
 remappings=['forge-std/=lib/forge-std/src/','solady-test/=lib/solady/test/']
+# optimizer_runs = 4294967295
+# via_ir = true
+
+[rpc_endpoints]
+base_goerli = "https://goerli.base.org"
+zora = "https://rpc.zora.energy"
+zora_testnet = "https://testnet.rpc.zora.co"
+optimism = "https://mainnet.optimism.io"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

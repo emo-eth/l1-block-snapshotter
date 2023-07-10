@@ -3,6 +3,16 @@ pragma solidity ^0.8.17;
 
 import {IL1Block} from "./interface/IL1Block.sol";
 import {L1BlockSnapshot} from "./lib/Structs.sol";
+import {
+    NUMBER_SELECTOR,
+    TIMESTAMP_SELECTOR,
+    BASEFEE_SELECTOR,
+    HASH_SELECTOR,
+    SEQUENCE_NUMBER_SELECTOR,
+    BATCHER_HASH_SELECTOR,
+    L1_FEE_OVERHEAD_SELECTOR,
+    L1_FEE_SCALAR_SELECTOR
+} from "./lib/Constants.sol";
 
 contract L1Snapshot {
     ///@dev The L1 block contract to use for snapshots for all OP Stack chains.
@@ -82,7 +92,7 @@ contract L1Snapshot {
     }
 
     function _snapshot() internal {
-        uint64 l1BlockNumber = L1_BLOCK.number();
+        uint64 l1BlockNumber = uint64(_callL1Block(NUMBER_SELECTOR));
         L1BlockSnapshot storage existing = snapshots[l1BlockNumber];
         // if snapshot already exists, do nothing
         if (existing.number != 0) {
@@ -91,13 +101,47 @@ contract L1Snapshot {
         // otherwise, create a new snapshot
         snapshots[l1BlockNumber] = L1BlockSnapshot({
             number: l1BlockNumber,
-            timestamp: L1_BLOCK.timestamp(),
-            basefee: L1_BLOCK.basefee(),
-            hash: L1_BLOCK.hash(),
-            sequenceNumber: L1_BLOCK.sequenceNumber(),
-            batcherHash: L1_BLOCK.batcherHash(),
-            l1FeeOverhead: L1_BLOCK.l1FeeOverhead(),
-            l1FeeScalar: L1_BLOCK.l1FeeScalar()
+            timestamp: uint64(_callL1Block(TIMESTAMP_SELECTOR)),
+            basefee: _callL1Block(BASEFEE_SELECTOR),
+            hash: bytes32(_callL1Block(HASH_SELECTOR)),
+            sequenceNumber: uint64(_callL1Block(SEQUENCE_NUMBER_SELECTOR)),
+            batcherHash: bytes32(_callL1Block(BATCHER_HASH_SELECTOR)),
+            l1FeeOverhead: _callL1Block(L1_FEE_OVERHEAD_SELECTOR),
+            l1FeeScalar: _callL1Block(L1_FEE_SCALAR_SELECTOR)
         });
+    }
+
+    /**
+     * @dev Call the L1 block contract with a given selector and return the first word of returndata.
+     *
+     */
+    function _callL1Block(uint256 selectorConst) internal view returns (uint256 val) {
+        address l1BlockAddress = address(L1_BLOCK);
+        assembly {
+            mstore(0, selectorConst)
+            if iszero(
+                staticcall(
+                    // forward all gass
+                    gas(),
+                    // call address
+                    l1BlockAddress,
+                    // read from 0x1c
+                    0x1c,
+                    // read 4 bytes
+                    0x04,
+                    // write returndata starting at 0x0
+                    0,
+                    // write 32 bytes of returndata
+                    0x20
+                )
+            ) {
+                // on failure, copy all returndata to memory
+                returndatacopy(0, 0, returndatasize())
+                // revert with returndata
+                revert(0, returndatasize())
+            }
+            // on success, read the first word of memory onto the stack and return it
+            val := mload(0)
+        }
     }
 }

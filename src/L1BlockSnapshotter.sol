@@ -14,17 +14,24 @@ import {
     L1_FEE_SCALAR_SELECTOR
 } from "./lib/Constants.sol";
 
+/**
+ * @title  L1BlockSnapshotter
+ * @author emo.eth
+ * @notice The L1BlockSnapshotter contract snapshots L1 block data as returned by the L1Block smart contract, allowing
+ *         for historical lookup by L2 applications.
+ */
 contract L1BlockSnapshotter {
+    ///@dev Error thrown when no snapshot exists for a given L1 block number.
+    error NoSnapshotForBlock(uint256 l1BlockNumber);
+
+    ///@dev Event emitted when a new L1 block snapshot is created, for offchain indexing
+    event Snapshot(uint256 indexed l1BlockNumber);
+
     ///@dev The L1 block contract to use for snapshots for all OP Stack chains.
     IL1Block public constant L1_BLOCK = IL1Block(0x4200000000000000000000000000000000000015);
 
     ///@dev Mapping of L1 block number to L1 block snapshot.
     mapping(uint256 l1BlockNumber => L1BlockSnapshot snapshot) snapshots;
-
-    ///@dev Error thrown when no snapshot exists for a given L1 block number.
-    error NoSnapshotForBlock(uint256 l1BlockNumber);
-
-    event Snapshot(uint256 indexed l1BlockNumber);
 
     /**
      * @notice Fallback function to snapshot the current L1 block without calldata overhead.
@@ -56,26 +63,50 @@ contract L1BlockSnapshotter {
         return _getL1BlockSnapshot(l1BlockNumber).timestamp;
     }
 
+    /**
+     * @notice Get the L1 block basefee of a given L1 block number.
+     * @param l1BlockNumber The L1 block number to get a snapshot for.
+     */
     function getL1BlockBasefee(uint256 l1BlockNumber) external view returns (uint256) {
         return _getL1BlockSnapshot(l1BlockNumber).basefee;
     }
 
+    /**
+     * @notice Get the L1 block hash of a given L1 block number.
+     * @param l1BlockNumber The L1 block number to get a snapshot for.
+     */
     function getL1BlockHash(uint256 l1BlockNumber) external view returns (bytes32) {
         return _getL1BlockSnapshot(l1BlockNumber).hash;
     }
 
+    /**
+     * @notice Get the L1 block sequence number of a given L1 block number.
+     * @param l1BlockNumber The L1 block number to get a snapshot for.
+     */
     function getL1BlockSequenceNumber(uint256 l1BlockNumber) external view returns (uint256) {
         return _getL1BlockSnapshot(l1BlockNumber).sequenceNumber;
     }
 
+    /**
+     * @notice Get the L1 block batcher hash of a given L1 block number.
+     * @param l1BlockNumber The L1 block number to get a snapshot for.
+     */
     function getL1BlockBatcherHash(uint256 l1BlockNumber) external view returns (bytes32) {
         return _getL1BlockSnapshot(l1BlockNumber).batcherHash;
     }
 
+    /**
+     * @notice Get the L1 block fee overhead of a given L1 block number.
+     * @param l1BlockNumber The L1 block number to get a snapshot for.
+     */
     function getL1BlockFeeOverhead(uint256 l1BlockNumber) external view returns (uint256) {
         return _getL1BlockSnapshot(l1BlockNumber).l1FeeOverhead;
     }
 
+    /**
+     * @notice Get the L1 block fee scalar of a given L1 block number.
+     * @param l1BlockNumber The L1 block number to get a snapshot for.
+     */
     function getL1BlockFeeScalar(uint256 l1BlockNumber) external view returns (uint256) {
         return _getL1BlockSnapshot(l1BlockNumber).l1FeeScalar;
     }
@@ -93,6 +124,9 @@ contract L1BlockSnapshotter {
         return existing;
     }
 
+    /**
+     * @dev Store the latest L1Block values in a snapshot, if one does not already exist.
+     */
     function _snapshot() internal {
         uint64 l1BlockNumber = uint64(_callL1Block(NUMBER_SELECTOR));
         L1BlockSnapshot storage existing = snapshots[l1BlockNumber];
@@ -112,13 +146,13 @@ contract L1BlockSnapshotter {
             l1FeeScalar: _callL1Block(L1_FEE_SCALAR_SELECTOR)
         });
 
-        // emit an event for easier off-chain indexing
+        // emit an event for easier offchain indexing
         emit Snapshot(l1BlockNumber);
     }
 
     /**
      * @dev Call the L1 block contract with a given selector and return the first word of returndata.
-     *
+     * @param selectorConst The selector to call.
      */
     function _callL1Block(uint256 selectorConst) internal view returns (uint256 val) {
         address l1BlockAddress = address(L1_BLOCK);

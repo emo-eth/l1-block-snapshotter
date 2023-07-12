@@ -24,6 +24,8 @@ contract L1BlockSnapshotter {
     ///@dev Error thrown when no snapshot exists for a given L1 block number.
     error NoSnapshotForBlock(uint256 l1BlockNumber);
 
+    event Snapshot(uint256 indexed l1BlockNumber);
+
     /**
      * @notice Fallback function to snapshot the current L1 block without calldata overhead.
      */
@@ -109,6 +111,9 @@ contract L1BlockSnapshotter {
             l1FeeOverhead: _callL1Block(L1_FEE_OVERHEAD_SELECTOR),
             l1FeeScalar: _callL1Block(L1_FEE_SCALAR_SELECTOR)
         });
+
+        // emit an event for easier off-chain indexing
+        emit Snapshot(l1BlockNumber);
     }
 
     /**
